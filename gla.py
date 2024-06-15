@@ -5,10 +5,9 @@ import os
 if __name__ == '__main__':
 
     # glados账号cookie 直接使用数组 如果使用环境变量需要字符串分割一下
-    cookies = os.environ.get("gla", []).split("&")
+    cookies = os.environ.get("gla", "").split("&")
     if cookies[0] == "":
         print('未获取到COOKIE变量')
-        cookies = []
         exit(0)
 
     url = "https://glados.rocks/api/user/checkin"
@@ -30,15 +29,20 @@ if __name__ == '__main__':
         if checkin.status_code == 200:
             # 解析返回的json数据
             result = checkin.json()     
+            print(result)
             # 获取签到结果
             status = result.get('message')
+            lists = result.get('list')
 
+            balance = None
+
+            if lists and len(lists) > 0:
+                balance =  int(float(lists[0]['balance']))
             # 获取账号当前状态
             result = state.json()
             # 获取剩余时间
             leftdays = int(float(result['data']['leftDays']))
             # 获取账号email
-            
             email = result['data']['email']
 
             if status == "Checkin! Get 1 Day":
@@ -52,20 +56,23 @@ if __name__ == '__main__':
                 message_days = f"{leftdays} 天"
             else:
                 message_days = "无法获取剩余天数信息"
+
+            if balance is not None:
+                message_point = f"{balance} 点"
+            else:
+                message_point = "无法获取当前 balance 信息"
         else:
             email = ""
             message_status = "签到请求url失败, 请检查..."
             message_days = "获取信息失败"
+            message_point = "获取信息失败"
 
         # # 推送内容
-        sendContent = f"{'-'*30}\n\
-            账号: {email}\n\
-            签到情况: {message_status}\n\
-            剩余天数: {message_days}\n"
-        print(sendContent);
-        
-        # if cookie == cookies[-1]:
-        #     sendContent += '-' * 30
-        
-     # --------------------------------------------------------------------------------------------------------#
-    # print("sendContent:" + "\n", sendContent)
+        send_content = (
+            f"{'-'*30}\n"
+            f"账号: {email}\n"
+            f"签到情况: {message_status}\n"
+            f"当前 Points: {message_point}\n"
+            f"剩余天数: {message_days}\n"
+        )
+        print(send_content)
