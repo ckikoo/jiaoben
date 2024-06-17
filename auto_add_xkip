@@ -1,0 +1,45 @@
+import os
+import re
+import requests
+import socket
+
+# 获取环境变量 DY_PROXY 的值
+dy_proxy = os.environ.get('DY_PROXY')
+server = os.environ.get('server')
+if not dy_proxy:
+    print('DY_PROXY environment variable is not set.')
+else:
+    match = re.search(r'apikey=([A-Za-z0-9]+)&.*sign=([A-Za-z0-9]+)', dy_proxy)
+    if not match:
+        print('Failed to extract API Key and Sign from DY_PROXY.')
+    else:
+        api_key = match.group(1)
+        sign = match.group(2)
+        print(f'API Key: {api_key}')
+        print(f'Sign: {sign}')
+
+        # Step 1: Get the IP address from OnlyIp.aspx
+        getIp_url = 'http://121.199.42.16/VAD/OnlyIp.aspx'
+        response1 = requests.get(getIp_url, params={'yyy': '123'})
+        only_ip = response1.text.strip()  # Ensure to strip any whitespace
+
+        # Step 2: Resolve the domain name to get the IP address
+        server_host = server # Replace with actual server domain or IP address
+        server_ip = socket.gethostbyname(server_host)
+
+        # Step 3: Combine both IPs into one string separated by a comma
+        combined_ips = f"{only_ip},{server_ip}"
+
+        # Step 4: Make the API request to add both IPs to the whitelist
+        api_url = 'http://api2.xkdaili.com/tools/XApi.ashx'
+        params = {
+            'apikey': api_key,
+            'type': 'addwhiteip',  # Assuming this is the operation type
+            'sign': sign,
+            'flag': '8',
+            'ip': combined_ips,  # Combined IP addresses
+        }
+
+        # Send GET request
+        response2 = requests.get(api_url, params=params)
+        print(response2.text)
