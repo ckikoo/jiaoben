@@ -5,27 +5,48 @@
 # cron "0 0 8 * * *" script-path=xxx.py,tag=匹配cron用
 # const $ = new Env('雨云签到');
 
-import json,requests,os,time
+import requests
+import json
+import telepot
 
-
-##变量雨云账号密码 注册地址https://www.rainyun.com/NTY1NzY=_   登录后积分中心里面 赚钱积分 (如绑定微信 直接就有2000分）就可以用积分兑换主机 需要每天晚上八点蹲点
-
-# yyusername =os .getenv ("yyusername")#line:12
-# yypassword =os .getenv ("yypassword")#line:13
-def login_sign ():#line:17
-    O00OOO00O0OO0OO00 =requests .session ()#line:18
-    OOOO000000000O0O0 =O00OOO00O0OO0OO00 .post ('https://api.v2.rainyun.com/user/login',headers ={"Content-Type":"application/json"},data =json .dumps ({"field":f"{yyusername}","password":f"{yypassword}"}))#line:19
-    if OOOO000000000O0O0 .text .find ("200")>-1 :#line:20
-        print ("登录成功")#line:21
-        O000OOOOO000OOO0O =OOOO000000000O0O0 .cookies .get_dict ()['X-CSRF-Token']#line:22
-    else :#line:24
-        print (f"登录失败，响应信息：{OOOO000000000O0O0.text}")#line:25
-    O000O0OOOO00OOOOO ={'x-csrf-token':O000OOOOO000OOO0O ,}#line:31
-    O0O0O000OOOO0OOO0 =O00OOO00O0OO0OO00 .post ('https://api.v2.rainyun.com/user/reward/tasks',headers =O000O0OOOO00OOOOO ,data =json .dumps ({"task_name":"每日签到","verifyCode":""}))#line:32
-    print ('开始签到：签到结果 '+O0O0O000OOOO0OOO0 .text )#line:33
-
-if __name__ =='__main__':#line:44
-    for i in range(len(os.getenv("yyusername").split('#'))):
-        yyusername=os.getenv("yyusername").split('#')[i]
-        yypassword=os.getenv("yypassword").split('#')[i]
-        login_sign ()#line:45
+#Api信息
+api_key = os.getenv("yyapi")
+#请求用户信息
+url = "https://api.v2.rainyun.com/user/"
+payload={}
+headers_yh = {
+   'X-Api-Key': api_key
+}
+res_points = requests.request("GET", url, headers=headers_yh, data=payload)
+zh_json = res_points.json()
+pointsbefore = zh_json['data']['Points']
+ID = zh_json['data']['ID']
+name = zh_json['data']['Name']
+print(f'ID：{ID}')
+print(f'用户名：{name}')
+print(f'剩余积分：{pointsbefore}')
+print('==============================')
+#签到部分
+url_lqjf = 'https://api.v2.rainyun.com/user/reward/tasks'
+headers_lqjf = {
+    'content-type':"application/json",
+    'X-Api-Key':api_key
+    }
+body_lqjf = {
+    "task_name" : '每日签到',
+    "verifyCode" : ''
+    }
+res_lqjf = requests.request("POST", url_lqjf, headers=headers_lqjf, data = json.dumps(body_lqjf))
+res_points = requests.request("GET", url, headers=headers_yh, data=payload)
+zh_json = res_points.json()
+points = zh_json['data']['Points']
+if points == {pointsbefore + 300}:
+    print(f'签到成功，当前剩余积分：{points + 300}')
+else:
+    print(f'签到失败，返回值：{res_lqjf.text}')
+print('==============================')
+#推送
+if tgpush == 'true':
+    sendmessage = '''雨云自动签到Bot\n签到通知\n用户ID：{0}\n用户名：{1}\n签到前积分：{2}\n当前积分：{3}\nhttps://github.com/ZYGLQexplorer/RainYun-Checkin'''.format(ID, name, pointsbefore, points)
+    bot = telepot.Bot(bot_token)
+    bot.sendMessage(msgid, sendmessage, parse_mode=None, disable_web_page_preview=True, disable_notification=None, reply_to_message_id=None, reply_markup=None)
